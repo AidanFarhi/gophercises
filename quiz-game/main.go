@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"time"
 )
 
 const FILE_NAME = "problems.csv"
@@ -22,11 +23,11 @@ func getLinesFromCSV(fileName string) ([][]string, error) {
 	return lines, err
 }
 
-func askQuestionAndGetResult(quizItemNumber int, quizItem []string) bool {
+func askQuestionAndGetResult(quizItemNumber int, quizItem []string, answerChannel chan<- bool) {
 	question, correctAnswer, userAnswer := quizItem[0], quizItem[1], ""
 	fmt.Printf("Question #%d: %s = ", quizItemNumber, question)
 	fmt.Scanln(&userAnswer)
-	return userAnswer == correctAnswer
+	answerChannel <- userAnswer == correctAnswer
 }
 
 func main() {
@@ -37,10 +38,19 @@ func main() {
 	}
 	score := 0
 	numQuestions := len(lines)
+	timer := time.NewTimer(time.Duration(2) * time.Second)
+	answerChannel := make(chan bool)
 	for i, quizItem := range lines {
-		if askQuestionAndGetResult(i+1, quizItem) {
-			score++
+		go askQuestionAndGetResult(i+1, quizItem, answerChannel)
+		select {
+		case <-timer.C:
+			fmt.Printf("\nResults: %d/%d correct\n", score, numQuestions)
+			return
+		case result := <-answerChannel:
+			if result {
+				score++
+			}
 		}
 	}
-	fmt.Printf("Results: %d/%d correct\n", score, numQuestions)
+	fmt.Printf("\nResults: %d/%d correct\n", score, numQuestions)
 }
