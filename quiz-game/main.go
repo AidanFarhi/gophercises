@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -31,6 +32,8 @@ func askQuestionAndGetResult(quizItemNumber int, quizItem []string, answerChanne
 }
 
 func main() {
+	quizTimer := flag.Int("timer", 30, "time of quiz")
+	flag.Parse()
 	lines, err := getLinesFromCSV(FILE_NAME)
 	if err != nil {
 		fmt.Println(err)
@@ -38,7 +41,7 @@ func main() {
 	}
 	score := 0
 	numQuestions := len(lines)
-	timer := time.NewTimer(time.Duration(2) * time.Second)
+	timer := time.NewTimer(time.Duration(*quizTimer) * time.Second)
 	answerChannel := make(chan bool)
 	for i, quizItem := range lines {
 		go askQuestionAndGetResult(i+1, quizItem, answerChannel)
